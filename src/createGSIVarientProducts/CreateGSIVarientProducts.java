@@ -30,16 +30,16 @@ public class CreateGSIVarientProducts {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws FileNotFoundException, Exception {
-        String virtualProdFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/products-simple.csv";
+        String virtualProdFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/products-simple.csv";
         List<LamsProduct> allVirtualProds = readAndParseProduct(virtualProdFileName);
 
-        String prodColorFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/productscolor.csv";
+        String prodColorFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/productscolor.csv";
         List<LamsProductColorVarient> allVarientProds = readAndParseProductColorVarient(prodColorFileName);
 
-        String fileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/color.csv";
+        String fileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/color.csv";
         List<LamsProductColor> allColors = readAndParseColor(fileName);
 
-        String outFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/productscolor.csv.xml";
+        String outFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/productscolor.csv.xml";
         createImportXML(allVarientProds, allVirtualProds, allColors, outFileName);
     }
 
