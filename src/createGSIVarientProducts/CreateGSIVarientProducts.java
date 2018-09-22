@@ -23,13 +23,16 @@ import java.util.Scanner;
  */
 public class CreateGSIVarientProducts {
 
-    private static int pDimension = 37490; // <-- last sequence value item udpate of virtual prod insert
-    private static int ppChange = 10000;
+    private static int pDimension = 352520; // <-- last sequence value item udpate of virtual prod insert
+    private static int ppChange = 324400;
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws FileNotFoundException, Exception {
+        String existingFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/existing-PRODUCT-after01312018.csv";
+        List<String> existingProdIds = readExistingProdIds(existingFileName);
+        
         String virtualProdFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/products-simple.csv";
         List<LamsProduct> allVirtualProds = readAndParseProduct(virtualProdFileName);
 
@@ -40,7 +43,7 @@ public class CreateGSIVarientProducts {
         List<LamsProductColor> allColors = readAndParseColor(fileName);
 
         String outFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/productscolor.csv.xml";
-        createImportXML(allVarientProds, allVirtualProds, allColors, outFileName);
+        createImportXML(allVarientProds, allVirtualProds, allColors, existingProdIds, outFileName);
     }
 
     private static List<LamsProduct> readAndParseProduct(String fileName) throws FileNotFoundException {
@@ -180,9 +183,10 @@ public class CreateGSIVarientProducts {
         return color;
     }
 
-    private static void createImportXML(List<LamsProductColorVarient> allVarientProds,
-            List<LamsProduct> allVirtualProds,
-            List<LamsProductColor> allColors,
+    private static void createImportXML(List<LamsProductColorVarient> allVarientProds, 
+            List<LamsProduct> allVirtualProds, 
+            List<LamsProductColor> allColors, 
+            List<String> existingProdIds, 
             String outFileName) throws Exception {
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(outFileName));
@@ -193,6 +197,8 @@ public class CreateGSIVarientProducts {
 
         for (LamsProductColorVarient pcv : allVarientProds) {
             String productId = pcv.getProductID() + "-" + pcv.getProductID2();
+            
+            if (existingProdIds.contains(productId)) continue;
 
             String internalName = getInternalName(pcv.getProductID(), allVirtualProds);
             String colorName = getColorName(pcv.getColorID(), allColors);
@@ -265,11 +271,38 @@ public class CreateGSIVarientProducts {
         LamsProductColor color = matchingColor.orElse(null);
 
         if (color == null) {
+            System.out.println("## color id = " + colorID);
+            
             throw new Exception();
         } else {
             rtnString = color.getCOLOR();
         }
 
         return rtnString;
+    }
+    
+    private static List<String> readExistingProdIds(String existingFileName) throws FileNotFoundException {
+        Scanner scanner = null;
+        List<String> existingIds = new ArrayList<>();
+
+        scanner = new Scanner(new FileInputStream(existingFileName));
+
+        int index = 0;
+        while (scanner.hasNextLine()) {
+            String aLine = scanner.nextLine();
+            index++;
+            System.out.println(aLine);
+            if (index == 1) {
+                continue;
+            }
+
+            String delims = "[,]";
+            String[] tokens = aLine.split(delims, -1);
+
+            existingIds.add(tokens[0].trim());
+        }
+
+        scanner.close();
+        return existingIds;
     }
 }
