@@ -28,17 +28,22 @@ import java.util.Scanner;
  */
 public class CreateGSIPayments {
 
-    private static int paymentApplicationSeq = 10000;
+    private static List<String> existingOrderIds = new ArrayList<>();
+    private static int paymentApplicationSeq = 121180;
+    
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws FileNotFoundException, IOException, Exception {
         // TODO code application logic here
-        String paymentFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/payments.csv";
-        String outFileBase = "/home/seanc/Desktop/GSI/gsi_production/paymentCreate/paymentInput";
-        String customerFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/customer-id-account-db.csv";
-        String orderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/orders-from2011-noInv0-trimed-tab.txt";
+        String paymentFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/payments.csv";
+        String outFileBase = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/paymentCreate/paymentInput";
+        String customerFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/customer-id-account-db.csv";
+        String orderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/orders-from20180101-noInv0-trimed-tab.txt";
+        
+        String existingOrderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/existing-orderid-ORDER_HEADER-after01312018.csv";
+        existingOrderIds = readExistingOrderIds(existingOrderFileName);
 
         List<LambsOrder> allOrders = readAndParseOrder(orderFileName);
 
@@ -318,6 +323,9 @@ public class CreateGSIPayments {
         int fileSequence = 0;
 
         for (LambsOrder lo : allOrders) {
+            
+            if (existingOrderIds.contains(lo.getOrderID())) continue;
+            
             String invoiceId = lo.getInvoiceNum();
             if (orderCount % 50000 == 0) {
                 //create new writer with new file name
@@ -393,5 +401,29 @@ public class CreateGSIPayments {
         }
 
         return rtnPayments;
+    }
+    
+    private static List<String> readExistingOrderIds(String existingOrderFileName) throws FileNotFoundException {
+        Scanner scanner = null;
+        List<String> existingIds = new ArrayList<>();
+
+        scanner = new Scanner(new FileInputStream(existingOrderFileName));
+
+        int index = 0;
+        while (scanner.hasNextLine()) {
+            String aLine = scanner.nextLine();
+            index++;
+            if (index == 1) {
+                continue;
+            }
+
+            String delims = "[,]";
+            String[] tokens = aLine.split(delims, -1);
+
+            existingIds.add(tokens[0].trim());
+        }
+
+        scanner.close();
+        return existingIds;
     }
 }
