@@ -25,10 +25,7 @@ import java.util.Scanner;
  */
 public class CreateGSISalesOrderInvoice {
 
-    private static int inventorySeq = 10000;
-    private static int paymentPrefSeq = 10000;
-    private static int shipmentSeq = 10000;
-    private static int itemIssuenceSeq = 10000;
+    private static int paymentPrefSeq = 98830;  //<-- get it from the DB se
 
     /**
      * @param args the command line arguments
@@ -36,14 +33,14 @@ public class CreateGSISalesOrderInvoice {
     public static void main(String[] args) throws FileNotFoundException, IOException, Exception {
         String existingOrderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/existing-orderid-ORDER_HEADER-after01312018.csv";
         List<String> existingOrderIds = readExistingOrderIds(existingOrderFileName);
-        
+
         String orderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/orders-from20180101-noInv0-trimed-tab.txt";
         List<LambsOrder> allOrders = readAndParseOrder(orderFileName);
 
         String virtualProdFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/products-simple.csv";
         List<LamsProduct> allVirtualProds = readAndParseProduct(virtualProdFileName);
 
-        String prodColorFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/productscolor.csv";
+        String prodColorFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/productscolor-all.csv";
         List<LamsProductColorVarient> allVarientProds = readAndParseProductColorVarient(prodColorFileName);
 
         String customerFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/customer-id-account-db.csv";
@@ -52,7 +49,7 @@ public class CreateGSISalesOrderInvoice {
         String employeeFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/employees.csv";
         List<LamsEmployee> allEmps = readAndParseEmployee(employeeFileName);
 
-        String orderDetailFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/orderDetail-from2011.csv";
+        String orderDetailFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/orderDetail-from20180201.csv";
         List<LambsOrderDetail> allOrderDetails = readAndParseOrderDetails(orderDetailFileName);
 
         String partyContactMechFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/partyId_contactMechId.csv";
@@ -61,7 +58,7 @@ public class CreateGSISalesOrderInvoice {
         String prodIdInternalNameFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/prodId-InternalName.csv";
         Map<String, String> pIdName = readAndParsePIdInternalName(prodIdInternalNameFileName);
 
-        createImportXML(allEmps, allVirtualProds, allVarientProds, allCustomers, allOrders, allOrderDetails, pContactMech, pIdName);
+        createImportXML(allEmps, allVirtualProds, allVarientProds, allCustomers, allOrders, allOrderDetails, pContactMech, pIdName, existingOrderIds);
     }
 
     private static void createImportXML(List<LamsEmployee> allEmps,
@@ -71,7 +68,8 @@ public class CreateGSISalesOrderInvoice {
             List<LambsOrder> allOrders,
             List<LambsOrderDetail> allOrderDetails,
             Map<String, String> partyContactMech,
-            Map<String, String> pIdName) throws IOException, Exception {
+            Map<String, String> pIdName,
+            List<String> existingOrderIds) throws IOException, Exception {
 
         String outFileNameBase = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/oCreate/orderInput";
         String outFileName = "";
@@ -80,7 +78,13 @@ public class CreateGSISalesOrderInvoice {
         int fileSequence = 0;
         int maxNumOrdersPerFile = 10000;
 
+        String currentOrderId = new String();
+
         for (LambsOrder od : allOrders) {
+            currentOrderId = od.getOrderID();
+            if (existingOrderIds.contains(currentOrderId)) {
+                continue;
+            }
 
             if (orderCount % maxNumOrdersPerFile == 0) {
                 //create new writer with new file name
@@ -104,18 +108,37 @@ public class CreateGSISalesOrderInvoice {
             List<LambsOrderDetail> oItems = getOrderItems(od.getOrderID(), allOrderDetails);
             String empId = getEmpLoginName(od, allEmps);
 
-            //System.out.println("Processing... " + od.getOrderID());
+            System.out.println("Processing... " + od.getOrderID());
             writeOutOrder(od, oCustomerId, contactMechId, oItems, empId, allVarientProds, writer, pIdName);
 
             writer.write("\r\n");
             orderCount++;
 
             if (orderCount % maxNumOrdersPerFile == 0 && orderCount != 0) {
+                //write out the sequence update
+                paymentPrefSeq = paymentPrefSeq + 10;
+                writer.write("<SequenceValueItem seqName=\"OrderPaymentPreference\" seqId=\"" + String.valueOf(paymentPrefSeq) + "\"/>");
+                writer.write("\r\n");
+
+                Integer orderIdInt = Integer.parseInt(currentOrderId) + 10;
+                writer.write("<SequenceValueItem seqName=\"OrderHeader\" seqId=\"" + String.valueOf(orderIdInt) + "\"/>");
+                writer.write("\r\n");
+                writer.write("\r\n");
+
                 //close the current writer
                 writer.write("</entity-engine-xml>" + "\r\n");
                 writer.close();
             }
         }
+
+        paymentPrefSeq = paymentPrefSeq + 10;
+        writer.write("<SequenceValueItem seqName=\"OrderPaymentPreference\" seqId=\"" + String.valueOf(paymentPrefSeq) + "\"/>");
+        writer.write("\r\n");
+
+        Integer orderIdInt = Integer.parseInt(currentOrderId) + 10;
+        writer.write("<SequenceValueItem seqName=\"OrderHeader\" seqId=\"" + String.valueOf(orderIdInt) + "\"/>");
+        writer.write("\r\n");
+        writer.write("\r\n");
 
         writer.write("</entity-engine-xml>" + "\r\n");
         writer.close();
@@ -177,20 +200,6 @@ public class CreateGSISalesOrderInvoice {
                 + "\" statusId=\"PAYMENT_NOT_RECEIVED\" createdDate=\"" + od.getOrderDate() + "\" createdByUserLogin=\"admin\" />");
         writer.write("\r\n");
 
-        //shipment
-        /*
-        writer.write("<OrderItemShipGroup orderId=\"" + od.getOrderID()
-                + "\" shipGroupSeqId=\"00001\" carrierRoleTypeId=\"CARRIER\" contactMechId=\"" + contactMechId
-                + "\" shippingInstructions=\"\" maySplit=\"N\" isGift=\"N\" />");
-        writer.write("\r\n");
-
-        writer.write("<Shipment shipmentId=\"" + shipmentSeq + "\" shipmentTypeId=\"SALES_SHIPMENT\" statusId=\"SHIPMENT_SHIPPED\" primaryOrderId=\"" + od.getOrderID() + "\" "
-                + "primaryShipGroupSeqId=\"00001\" estimatedShipCost=\"0.00\" originFacilityId=\"10000\" originContactMechId=\"10003\" "
-                + "destinationContactMechId=\"" + contactMechId + "\" partyIdTo=\"" + oCustomerId + "\" partyIdFrom=\"10000\" "
-                + "createdDate=\"" + od.getOrderDate() + "\" createdByUserLogin=\"admin\" />");
-        writer.write("\r\n");
-        */
-
         //invoice
         writer.write("<Invoice invoiceId=\"" + od.getInvoiceNum() + "\" invoiceTypeId=\"SALES_INVOICE\" partyIdFrom=\"10000\" "
                 + "partyId=\"" + oCustomerId + "\" statusId=\"INVOICE_PAID\" "
@@ -207,7 +216,6 @@ public class CreateGSISalesOrderInvoice {
         writer.write("<InvoiceRole invoiceId=\"" + od.getInvoiceNum() + "\" partyId=\"" + oCustomerId + "\" roleTypeId=\"SHIP_TO_CUSTOMER\" />");
         writer.write("\r\n");
 
-        int shipItemSeqId = 1;
         int invoiceItemSeq = 1;
         for (LambsOrderDetail odItem : oItems) {
 
@@ -226,42 +234,7 @@ public class CreateGSISalesOrderInvoice {
             int orderShipped = orderQty - backQty;
 
             if (orderShipped > 0) {
-                //inventory item
-                /*
-                writer.write("<InventoryItem inventoryItemId=\"" + Integer.toString(inventorySeq)
-                        + "\" inventoryItemTypeId=\"NON_SERIAL_INV_ITEM\" productId=\"" + productId
-                        + "\" ownerPartyId=\"10000\" facilityId=\"10000\" quantityOnHandTotal=\"-" + String.valueOf(orderShipped)
-                        + "\" availableToPromiseTotal=\"-" + String.valueOf(orderShipped)
-                        + "\" accountingQuantityTotal=\"-" + String.valueOf(orderShipped)
-                        + "\" unitCost=\"" + uPrice
-                        + "\" currencyUomId=\"USD\" />");
-                writer.write("\r\n");
-                */
 
-                //shipment items
-                /*
-                writer.write("<ShipmentItem shipmentId=\"" + Integer.toString(shipmentSeq) + "\" shipmentItemSeqId=\"" + String.format("%05d", shipItemSeqId)
-                        + "\" productId=\"" + productId
-                        + "\" quantity=\"" + String.valueOf(orderShipped)
-                        + "\" />");
-                writer.write("\r\n");
-                */
-
-                //item issuence
-                /*
-                writer.write("<ItemIssuance itemIssuanceId=\"" + Integer.toString(itemIssuenceSeq) + "\" orderId=\"" + od.getOrderID()
-                        + "\" orderItemSeqId=\"" + itemToSequenceId.get(productId)
-                        + "\" shipGroupSeqId=\"00001\" inventoryItemId=\"" + Integer.toString(inventorySeq)
-                        + "\" shipmentId=\"" + Integer.toString(shipmentSeq) + "\" shipmentItemSeqId=\"" + String.format("%05d", shipItemSeqId)
-                        + "\" issuedDateTime=\"" + od.getOrderDate() + "\" issuedByUserLoginId=\"admin\" quantity=\"" + String.valueOf(orderShipped)
-                        + "\" />");
-                writer.write("\r\n");
-                */
-/*
-                
-<InvoiceItem invoiceId="219594" invoiceItemSeqId="00001" invoiceItemTypeId="INV_FPROD_ITEM" productId="1942-22100" quantity="2" amount="46.50" description="New InRemy 10  &quot; - Natural" />
-<OrderItemBilling orderId="144067" orderItemSeqId="00001" invoiceId="219594" invoiceItemSeqId="00001" quantity="2" amount="46.50" />
-                */
                 //invoice items
                 writer.write("<InvoiceItem invoiceId=\"" + od.getInvoiceNum() + "\" invoiceItemSeqId=\"" + String.format("%05d", invoiceItemSeq)
                         + "\" invoiceItemTypeId=\"INV_FPROD_ITEM"
@@ -278,9 +251,6 @@ public class CreateGSISalesOrderInvoice {
                         + "\" amount=\"" + uPrice + "\" />");
                 writer.write("\r\n");
 
-                itemIssuenceSeq++;
-                inventorySeq++;
-                shipItemSeqId++;
             }
         }
         //invoice items
@@ -293,37 +263,6 @@ public class CreateGSISalesOrderInvoice {
         //invoice contact
         writer.write("<InvoiceContactMech invoiceId=\"" + od.getInvoiceNum() + "\" contactMechPurposeTypeId=\"PAYMENT_LOCATION\" contactMechId=\"10000\" />");
         writer.write("\r\n");
-
-        /*
-        //payment
-        BigDecimal invSum = new BigDecimal(od.getInvoiceSum());
-        BigDecimal invBal = new BigDecimal(od.getInvBalance());
-        BigDecimal collectionSum = new BigDecimal(od.getCollectionSum());
-
-        if (invSum.subtract(collectionSum).doubleValue() != invBal.doubleValue()) {
-            System.out.println(invSum);
-            System.out.println(collectionSum);
-            System.out.println(invSum.subtract(collectionSum));
-            System.out.println(invBal);
-
-            throw new Exception("invSum - collectionSum != invBal : invoice id " + invSum + " - " + collectionSum + " = " + invBal + " " + od.getInvoiceNum());
-        }
-
-        DecimalFormat df = new DecimalFormat("0.00");
-        if (collectionSum.doubleValue() != 0) {
-            writer.write("<Payment paymentId=\"" + String.valueOf(paymentSeq) + "\" paymentTypeId=\"CUSTOMER_PAYMENT\" paymentMethodTypeId=\"COMPANY_CHECK\" "
-                    + "paymentMethodId=\"10000\" partyIdFrom=\"" + oCustomerId + "\" partyIdTo=\"10000\" statusId=\"PMNT_RECEIVED\" "
-                    + "effectiveDate=\"" + od.getOrderDate() + "\" amount=\"" + df.format(collectionSum) + "\" currencyUomId=\"USD\" />");
-            writer.write("\r\n");
-
-            //payment application
-            writer.write("<PaymentApplication paymentApplicationId=\"" + String.valueOf(paymentApplicationSeq++) + "\" paymentId=\"" + String.valueOf(paymentSeq++)
-                    + "\" invoiceId=\"" + od.getInvoiceNum()
-                    + "\" amountApplied=\"" + df.format(collectionSum) + "\" />");
-            writer.write("\r\n");
-        }
-         */
-        shipmentSeq++;
 
         writer.write("\r\n");
     }
@@ -760,8 +699,28 @@ public class CreateGSISalesOrderInvoice {
         return prodId;
     }
 
-    private static List<String> readExistingOrderIds(String existingOrderFileName) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    private static List<String> readExistingOrderIds(String existingOrderFileName) throws FileNotFoundException {
+        Scanner scanner = null;
+        List<String> existingIds = new ArrayList<>();
+
+        scanner = new Scanner(new FileInputStream(existingOrderFileName));
+
+        int index = 0;
+        while (scanner.hasNextLine()) {
+            String aLine = scanner.nextLine();
+            index++;
+            if (index == 1) {
+                continue;
+            }
+
+            String delims = "[,]";
+            String[] tokens = aLine.split(delims, -1);
+
+            existingIds.add(tokens[0].trim());
+        }
+
+        scanner.close();
+        return existingIds;
     }
 
 }
