@@ -323,9 +323,7 @@ public class CreateGSIPayments {
         int fileSequence = 0;
 
         for (LambsOrder lo : allOrders) {
-            
-            if (existingOrderIds.contains(lo.getOrderID())) continue;
-            
+                        
             String invoiceId = lo.getInvoiceNum();
             if (orderCount % 50000 == 0) {
                 //create new writer with new file name
