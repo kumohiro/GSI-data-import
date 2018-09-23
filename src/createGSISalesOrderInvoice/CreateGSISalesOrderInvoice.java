@@ -34,28 +34,31 @@ public class CreateGSISalesOrderInvoice {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws FileNotFoundException, IOException, Exception {
-        String orderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/orders-from2011-noInv0-trimed-tab.txt";
+        String existingOrderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/existing-orderid-ORDER_HEADER-after01312018.csv";
+        List<String> existingOrderIds = readExistingOrderIds(existingOrderFileName);
+        
+        String orderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/orders-from20180101-noInv0-trimed-tab.txt";
         List<LambsOrder> allOrders = readAndParseOrder(orderFileName);
 
-        String virtualProdFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/products-simple.csv";
+        String virtualProdFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/products-simple.csv";
         List<LamsProduct> allVirtualProds = readAndParseProduct(virtualProdFileName);
 
-        String prodColorFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/productscolor.csv";
+        String prodColorFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/productscolor.csv";
         List<LamsProductColorVarient> allVarientProds = readAndParseProductColorVarient(prodColorFileName);
 
-        String customerFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/customer-id-account-db.csv";
+        String customerFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/customer-id-account-db.csv";
         List<LamsCustomerIdAccount> allCustomers = readAndParseCustomer(customerFileName);
 
-        String employeeFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/employees.csv";
+        String employeeFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/employees.csv";
         List<LamsEmployee> allEmps = readAndParseEmployee(employeeFileName);
 
-        String orderDetailFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/orderDetail-from2011.csv";
+        String orderDetailFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/orderDetail-from2011.csv";
         List<LambsOrderDetail> allOrderDetails = readAndParseOrderDetails(orderDetailFileName);
 
-        String partyContactMechFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/partyId_contactMechId.csv";
+        String partyContactMechFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/partyId_contactMechId.csv";
         Map<String, String> pContactMech = readAndParsePartyContactMech(partyContactMechFileName);
 
-        String prodIdInternalNameFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/products/prodId-InternalName.csv";
+        String prodIdInternalNameFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/prodId-InternalName.csv";
         Map<String, String> pIdName = readAndParsePIdInternalName(prodIdInternalNameFileName);
 
         createImportXML(allEmps, allVirtualProds, allVarientProds, allCustomers, allOrders, allOrderDetails, pContactMech, pIdName);
@@ -70,7 +73,7 @@ public class CreateGSISalesOrderInvoice {
             Map<String, String> partyContactMech,
             Map<String, String> pIdName) throws IOException, Exception {
 
-        String outFileNameBase = "/home/seanc/Desktop/GSI/gsi_production/oCreate/orderInput";
+        String outFileNameBase = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/oCreate/orderInput";
         String outFileName = "";
         int orderCount = 0;
         BufferedWriter writer = null;
@@ -755,6 +758,10 @@ public class CreateGSISalesOrderInvoice {
         }
 
         return prodId;
+    }
+
+    private static List<String> readExistingOrderIds(String existingOrderFileName) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }
