@@ -26,11 +26,15 @@ import java.util.Scanner;
 public class CreateGSISalesOrderInvoice {
 
     private static int paymentPrefSeq = 98830;  //<-- get it from the DB se
+    private static Map<String, String> userIDtoLoginMap = new HashMap<>();
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws FileNotFoundException, IOException, Exception {
+        String userIDtoLoginFile = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/userId-login-fromOFBIZ.csv";
+        userIDtoLoginMap = readIdToLoginMap(userIDtoLoginFile);
+
         String existingOrderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/existing-orderid-ORDER_HEADER-after01312018.csv";
         List<String> existingOrderIds = readExistingOrderIds(existingOrderFileName);
 
@@ -679,7 +683,9 @@ public class CreateGSISalesOrderInvoice {
     }
 
     private static String getUserLogin(LamsEmployee lc) {
-        return (lc.getFirstName().toLowerCase() + lc.getLastName().toLowerCase().substring(0, 1)).replace(" ", "").replace(".", "");
+        
+        return userIDtoLoginMap.get(lc.getEmployeeID());
+        //return (lc.getFirstName().toLowerCase() + lc.getLastName().toLowerCase().substring(0, 1)).replace(" ", "").replace(".", "");
     }
 
     private static String getProdId(LambsOrderDetail odItem, List<LamsProductColorVarient> allVarientProds) throws Exception {
@@ -721,6 +727,30 @@ public class CreateGSISalesOrderInvoice {
 
         scanner.close();
         return existingIds;
+    }
+
+    private static Map<String, String> readIdToLoginMap(String userIDtoLoginFile) throws FileNotFoundException {
+        Scanner scanner = null;
+        Map<String, String> uidMap = new HashMap<>();
+
+        scanner = new Scanner(new FileInputStream(userIDtoLoginFile));
+
+        int index = 0;
+        while (scanner.hasNextLine()) {
+            String aLine = scanner.nextLine();
+            index++;
+            if (index == 1) {
+                continue;
+            }
+
+            String delims = "[,]";
+            String[] tokens = aLine.split(delims, -1);
+
+            uidMap.put(tokens[0].trim(), tokens[1].trim());
+        }
+
+        scanner.close();
+        return uidMap;
     }
 
 }

@@ -36,7 +36,7 @@ public class CreateGSIVarientProducts {
         String virtualProdFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/products-simple.csv";
         List<LamsProduct> allVirtualProds = readAndParseProduct(virtualProdFileName);
 
-        String prodColorFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/productscolor.csv";
+        String prodColorFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/productscolor-all.csv";
         List<LamsProductColorVarient> allVarientProds = readAndParseProductColorVarient(prodColorFileName);
 
         String fileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/color.csv";
