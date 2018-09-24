@@ -30,7 +30,8 @@ public class CreateGSIPayments {
 
     private static List<String> existingOrderIds = new ArrayList<>();
     private static int paymentApplicationSeq = 121180;
-    
+
+    private static String lastPaymentID = "0";
 
     /**
      * @param args the command line arguments
@@ -41,7 +42,7 @@ public class CreateGSIPayments {
         String outFileBase = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/paymentCreate/paymentInput";
         String customerFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/customer-id-account-db.csv";
         String orderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/orders-from20180101-noInv0-trimed-tab.txt";
-        
+
         String existingOrderFileName = "/home/seanc/Desktop/GSI/gsi_production/exported-data/data-08292018/existing-orderid-ORDER_HEADER-after01312018.csv";
         existingOrderIds = readExistingOrderIds(existingOrderFileName);
 
@@ -115,6 +116,7 @@ public class CreateGSIPayments {
         return lp;
     }
 
+    /*
     private static void writeOutPaymentXML(String outFileNameBase,
             List<LambsPayment> payments,
             List<LamsCustomerIdAccount> allCustomers,
@@ -167,7 +169,7 @@ public class CreateGSIPayments {
         writer.write("</entity-engine-xml>" + "\r\n");
         writer.close();
     }
-
+     */
     private static List<LamsCustomerIdAccount> readAndParseCustomer(String fileName) throws FileNotFoundException {
         Scanner scanner = null;
         ArrayList<LamsCustomerIdAccount> coLinks = new ArrayList();
@@ -323,7 +325,7 @@ public class CreateGSIPayments {
         int fileSequence = 0;
 
         for (LambsOrder lo : allOrders) {
-                        
+
             String invoiceId = lo.getInvoiceNum();
             if (orderCount % 50000 == 0) {
                 //create new writer with new file name
@@ -340,11 +342,26 @@ public class CreateGSIPayments {
             orderCount++;
 
             if (orderCount % 50000 == 0 && orderCount != 0) {
+                writer.write("<SequenceValueItem seqName=\"Payment\" seqId=\"" + String.valueOf(Integer.parseInt(lastPaymentID) + 10) + "\"/>");
+                writer.write("\r\n");
+
+                writer.write("<SequenceValueItem seqName=\"PaymentApplication\" seqId=\"" + String.valueOf(paymentApplicationSeq + 10) + "\"/>");
+                writer.write("\r\n");
+                writer.write("\r\n");
+
                 //close the current writer
                 writer.write("</entity-engine-xml>" + "\r\n");
                 writer.close();
             }
         }
+
+        writer.write("<SequenceValueItem seqName=\"Payment\" seqId=\"" + String.valueOf(Integer.parseInt(lastPaymentID) + 10) + "\"/>");
+        writer.write("\r\n");
+
+        writer.write("<SequenceValueItem seqName=\"PaymentApplication\" seqId=\"" + String.valueOf(paymentApplicationSeq + 10) + "\"/>");
+        writer.write("\r\n");
+        writer.write("\r\n");
+
         writer.write("</entity-engine-xml>" + "\r\n");
         writer.close();
     }
@@ -371,6 +388,11 @@ public class CreateGSIPayments {
 
                 BigDecimal paymentAmt = new BigDecimal(lp.getPaymentAmount());
                 paymentTotal = paymentTotal.add(paymentAmt);
+
+                //update lastPaymentID
+                if (Integer.parseInt(lastPaymentID) < Integer.parseInt(lp.getPaymentID())) {
+                    lastPaymentID = lp.getPaymentID();
+                }
 
                 //payment
                 writer.write("<Payment paymentId=\"" + lp.getPaymentID() + "\" paymentTypeId=\"CUSTOMER_PAYMENT\" paymentMethodTypeId=\"COMPANY_CHECK\" "
@@ -400,7 +422,7 @@ public class CreateGSIPayments {
 
         return rtnPayments;
     }
-    
+
     private static List<String> readExistingOrderIds(String existingOrderFileName) throws FileNotFoundException {
         Scanner scanner = null;
         List<String> existingIds = new ArrayList<>();
