@@ -64,7 +64,10 @@ public class CreateGSIAssociationProduct {
         writer.write("<entity-engine-xml>" + "\r\n");
 
         for (String prodId : pIdName.keySet()) {
-            
+            /*
+            <ProductFacility productId="10-134" facilityId="10000" lastUpdatedStamp="2018-09-24 20:04:10.0" lastUpdatedTxStamp="2018-09-24 20:04:10.0" createdStamp="2018-09-24 20:04:10.0" createdTxStamp="2018-09-24 20:04:10.0"/>
+            */
+            writer.write("<ProductFacility productId=\"" + prodId + "\" facilityId=\"10000\"/>" + "\r\n");
         }
         
         writer.write("</entity-engine-xml>" + "\r\n");
